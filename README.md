@@ -139,6 +139,24 @@ pipeline {
 }
 ```
 
+```
+pipeline {
+    agent any
+
+    environment {
+        HELM = 'C:\\ProgramData\\chocolatey\\bin\\helm.exe'
+    }
+
+    stages {
+        stage('Deploy with Helm') {
+            steps {
+                bat "\"%HELM%\" upgrade --install my-webapp ./webapp --namespace default"
+            }
+        }
+    }
+}
+```
+
 - Replace `/usr/local/bin/helm` with the path determined in Step 2.
 
 The Image shows the Helm Pipeline Configured
@@ -194,6 +212,7 @@ After creating `helm-web-app1` & `cd`  into the directory, then run this command
 
     - Use Git commands to commit these changes and push them to your remote repository. This will trigger the Jenkins Pipeline.
 
+   ![The Image shows the jenkins pipeline setup](image/jenkins-pipeline-setup.png)
 
     - Execute the following commands in your terminal:
 
@@ -210,4 +229,26 @@ After creating `helm-web-app1` & `cd`  into the directory, then run this command
     - Jenkins will then automatically start a new build, deploying your updated Helm chart with the new configurations.  
 
 
+### Jenkins Job Configuration (CRITICAL)
 
+ A. Open Jenkins Job
+
+ - Jenkins Dashboard
+ - Click Your Pipeline job
+ - Click Configure
+
+B. Pipeline Section 
+
+Set Exactly this:
+
+
+Settings                        Value
+
+Definition                      Pipeline script from SCM
+SCM                             Git
+Repository URL                  `https://github.com/sammyCHY/helm-web-app1.git`
+Credentials                      (Set if Private repo)
+Branches to build                `*/main`
+Script Path                       Jenkinsfile
+
+![The Image shows the Jenkins configuration](image/jenkins-configuration.png)
