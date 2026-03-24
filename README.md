@@ -40,9 +40,11 @@ Step 2: Run this Command (exactly)
     ```
     Get-Command helm | Select-Object -ExpandProperty Source
     ```
+    
+    
     Then Press Enter.
 
-    ![The Image shows how to generate helm binary path](image/get-helm-command)
+    ![The Image shows how to generate helm binary path](image/get-helm-command.png)
 
 
 - The output above is expected
