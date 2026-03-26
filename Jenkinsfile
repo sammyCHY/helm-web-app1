@@ -1,4 +1,4 @@
-pipeline {
+ppipeline {
     agent any
 
     environment {
@@ -6,6 +6,12 @@ pipeline {
     }
 
     stages {
+        stage('Checkout Code') {
+            steps {
+                git 'https://github.com/sammyCHY/helm-web-app1.git'
+            }
+        }
+
         stage('Deploy with Helm') {
             steps {
                 bat "\"%HELM%\" upgrade --install my-webapp ./webapp --namespace default"
