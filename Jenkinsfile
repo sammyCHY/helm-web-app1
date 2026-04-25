@@ -1,20 +1,18 @@
 pipeline {
     agent any
 
-    environment {
-        HELM = 'C:\\ProgramData\\chocolatey\\bin\\helm.exe'
-    }
-
     stages {
-        stage('Test Kubernetes') {
+        stage('Checkout Code') {
             steps {
-                bat 'kubectl get nodes'
+                git 'https://github.com/sammyCHY/helm-web-app1.git'
             }
         }
 
         stage('Deploy with Helm') {
             steps {
-                bat "\"%HELM%\" upgrade --install my-webapp ./webapp --namespace default"
+                script {
+                    sh '/usr/local/bin/helm upgrade --install my-webapp ./webapp --namespace default'
+                }
             }
         }
     }

@@ -3,10 +3,25 @@
 
 ### Step 1: Integrating Helm with CI/CD (Jenkins)
 
+### Prerequisites.
+Before touching Jenkins, make sure your environment is ready:
+   
+   - kubectl installed and configured
+
+   - Kubernetes Cluster (Minikube, Cloud Cluster or k3s lightweight, easiest on a single server)
+   
+   - Helm
+
+   - Docker
+   
+   - Git
+
 
 1. Jenkins Setup: 
 
     - Install Jenkins on your system with the default recommended plugins. If Jenkins is not already installed, follow the [official jenkins installation guide](https://www.jenkins.io/doc/book/installing/)
+
+
 
 Bellow are the process to install Jenkins in your window system, first click on the link above to take you to the official site, then select the window option. see the Image bellow
 
@@ -14,6 +29,9 @@ Bellow are the process to install Jenkins in your window system, first click on 
 
 
 ![The Image shows the jenkins installed in the Window](image/jenkins-installed.png)
+
+
+Here's a clear, real-world step-by-step guide to execute this mini project of integrating Jenkins with Helm and automating deployments.
 
 
 2.   Determine Helm Binary Path:
@@ -24,7 +42,215 @@ Bellow are the process to install Jenkins in your window system, first click on 
 
             - Linux/macOS: `which helm`
 
-            - Window: Get-Command helm | Select-Object -`ExpandProperty Source` in PowerShell.
+![The Image shows the installation of helm](image/which-helm.png)
+
+Helm need to be installed in the instance server by running this command below.
+
+```
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
+![The Image shows the installation of helm in the server](image/helm-installed.png)
+
+
+![The Image shows the version installed](image/helm-version.png)
+
+
+
+After the steps above, "kubectl" need to be installed for the helms to be able to run.
+
+Install the kubectl by following the steps below:
+
+    Step1: Download Kubectl using the command.
+    
+```
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+```
+
+Step 2: Make it executable using.
+
+```
+chmod +x kubectl
+```
+
+Step3: Move it to system path
+
+```
+sudo mv kubectl /usr/local/bin/
+```
+
+Step4: Verify installation.
+
+```
+kubectl version --client
+```
+
+![The Image shows the installation of kubectl steps](image/kubectl-steps.png)
+
+
+Installation on Linux.
+Follow the steps below
+
+Run the commands below:
+
+```
+sudo apt-get update
+sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
+```
+
+Add the Kubernetes signing key:
+
+```
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.35/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+```
+
+Add the Kubernetes repository:
+
+```
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.35/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+```
+But if you are installing kubectl and have some challenges of certificate expiry, as a result of Ubuntu system not reaching the Kubernetes repo, but APT still does not trust it's TLS certificate chain. Then, the problem is no longer DNS or Connectivity. The issue is APT'S SSL trust path rejects 'pkgs.k8s.io' because of an expired intermediate certificate in the chain.
+
+This happens on some Ubuntu images even after updating 'ca-certificates'.
+
+
+Install Kubectl directly by running this command below
+
+```
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+```
+
+Make it executable:
+
+```
+chmod +x kubectl
+```
+Then, move it into your PATH:
+
+sudo mv kubectl /usr/local/bin/
+
+
+![The Image shows the kubectl installed process](image/kubectl-installed.png)
+
+### Install K3s
+
+```
+curl -sfL https://get.k3s.io | sh -
+```
+
+![The Image shows the installation of K3s](image/install-k3s.png)
+
+Check status:
+
+```
+sudo systemctl status k3s
+```
+![The Image shows the k3s status](image/systemctl-k3s-status.png)
+
+Check nodes:
+
+```
+sudo kubectl get nodes
+```
+After Installation of K3s cluster and you discovered this kind of error on the image below when you run `sudo kubectl get nodes`.
+![The Image shows error after k3s installation kubectl get nodes](image/kubectl-get-nodes-error.png)
+
+In this scenario, it means **Kubeconfig problem,** not Kubernetes failure, the `kubectl` is working, but it is talikng to the wrong server.
+
+Instead of talking to my local k3s cluster, it is hitting a web login page(likely Jenkins, Rancher, or another dashboard), which is why Kubernetes return HTML instead of API JSON. Kubernetes should never return an HTML login page.
+
+What it means, the current `kubectl` config (`~/.kube/config`) So kubectl is not querying my local K3s API.
+
+    Then, steps to fix.
+
+`sudo cat /etc/rancher/k3s/k3s.yaml` the command help to confirm the kubeconfig generated by `K3S`
+
+![The Image shows the kubeconfig generated by k3s](image/kubeconfig-k3s-generated.png)
+
+The time I run the command above, I discovered the K3S cluster config is correct and It has an IP of  server: `https://127.0.0.1:6443`. that means: 
+- K3S API is local
+- Jenkins is on the same machine.
+- Jenkins can connect directly.
+- no external Kubernetes credentials are needed.
+So the task is simply to give jenkins access to this kubeconfig.
+
+1. Create Jenkins Kubeconfig folder
+
+    ```
+    sudo mkdir -p /var/lib/jenkins/.kube
+    ```
+
+2. Copy the K3S kubeconfig
+
+    ```
+    sudo cp /etc/rancher/k3s/k3s.yaml /var/lib/jenkins/.kube/config
+    ```
+This gives Jenkins its own Kubernetes config.
+
+3. Set Correct Permissions.
+
+    ```
+    sudo chown -R jenkins:jenkins /var/lib/jenkins/.kube
+    sudo chmod 600 /var/lib/jenkins/.kube/config
+    ```
+Without this, Jenkins will fail with permission denied.
+
+![The Image shows the kubeconfig jenkins](image/kubeconfig-jenkins.png)
+
+4. The this command `sudo cat /var/lib/jenkins/.kube/config` to confirm jenkins kubeconfig is correct and check if it still contains `server: https://127.0.0.1:6443`. That is correct API endpoint.
+
+5. Make Jenkins use this Kubeconfig
+
+Set environment variables for Jenkins:
+
+```
+sudo systemctl edit jenkins
+```
+then paste this two line below on the jenkins file
+
+```
+[Service]
+Environment="KUBECONFIG=/var/lib/jenkins/.kube/config"
+```
+Save and Exit.
+
+6. Reload Jenkins 
+
+```
+Sudo systemctl daemon-reload
+sudo systemctl restart jenkins
+```
+This applies the Kubeconfig path
+
+
+7. Test as Jenkins user
+    switch to Jenkins:
+`sudo su - jenkins`
+
+Now test Kubernetes access:
+
+```
+kubectl get nodes
+kubectl get pods -A
+```
+
+If this Works, Jenkins is fully connected to K3S.
+
+![The Image shows the connection of jenkins to k3s cluster](image/jenkins-k3s-cluster-connection.png)
+
+
+### Helm
+
+ Install Helm
+
+ ```
+ curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+ ```
+
+ ![The Image shows helm installation](image/helm-installation.png)
+
+
+    - Window: Get-Command helm | Select-Object -`ExpandProperty Source` in PowerShell.
 
 Run the command in PowerShell (Windows)
 
