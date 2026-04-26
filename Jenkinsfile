@@ -1,18 +1,28 @@
 pipeline {
     agent any
 
+    options {
+        skipDefaultCheckout(true)
+    }
+
+    environment {
+        KUBECONFIG = '/var/lib/jenkins/.kube/config'
+        HELM = '/usr/local/bin/helm'
+    }
+
     stages {
         stage('Checkout Code') {
             steps {
-                git 'https://github.com/sammyCHY/helm-web-app1.git'
+                git branch: 'main', url: 'https://github.com/sammyCHY/helm-web-app1.git'
             }
         }
 
         stage('Deploy with Helm') {
             steps {
-                script {
-                    sh '/usr/local/bin/helm upgrade --install my-webapp ./webapp --namespace default'
-                }
+                sh '''
+                    kubectl get nodes
+                    helm upgrade --install my-webapp ./webapp --namespace default
+                '''
             }
         }
     }

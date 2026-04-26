@@ -331,6 +331,12 @@ pipeline {
     agent any
 
     stages {
+        stage('Checkout Code') {
+            steps {
+                git 'https://github.com/sammyCHY/helm-web-app1.git'
+            }
+        }
+
         stage('Deploy with Helm') {
             steps {
                 script {
@@ -340,76 +346,7 @@ pipeline {
         }
     }
 }
-``` 
-
-
-Remember If the Jenkins agent is Windows, use:
-
-
 ```
-bat 'helm upgrade --install my-webapp ./webapp --namespace default'
-```
-  or with full path:
-
-```
-pipeline {
-    agent any
-
-    stages {
-        stage('Deploy with Helm') {
-            steps {
-                script {
-                    bat '"C:\ProgramData\chocolatey\bin\helm.exe" upgrade --install my-webapp ./webapp --namespace default'
-                }
-            }
-        }
-    }
-}
-```
-
-```
-pipeline {
-    agent any
-
-    environment {
-        HELM = 'C:\\ProgramData\\chocolatey\\bin\\helm.exe'
-    }
-
-    stages {
-        stage('Deploy with Helm') {
-            steps {
-                bat "\"%HELM%\" upgrade --install my-webapp ./webapp --namespace default"
-            }
-        }
-    }
-}
-```
-
-
-```
-ppipeline {
-    agent any
-
-    environment {
-        HELM = 'C:\\ProgramData\\chocolatey\\bin\\helm.exe'
-    }
-
-    stages {
-        stage('Checkout Code') {
-            steps {
-                git 'https://github.com/sammyCHY/helm-web-app1.git'
-            }
-        }
-
-        stage('Deploy with Helm') {
-            steps {
-                bat "\"%HELM%\" upgrade --install my-webapp ./webapp --namespace default"
-            }
-        }
-    }
-}
-```
-
 
 - Replace `/usr/local/bin/helm` with the path determined in Step 2.
 
