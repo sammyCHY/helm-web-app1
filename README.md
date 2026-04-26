@@ -330,18 +330,28 @@ Step 2: Configure the Pipeline from Git
 pipeline {
     agent any
 
+    options {
+        skipDefaultCheckout(true)
+    }
+
+    environment {
+        KUBECONFIG = '/var/lib/jenkins/.kube/config'
+        HELM = '/usr/local/bin/helm'
+    }
+
     stages {
         stage('Checkout Code') {
             steps {
-                git 'https://github.com/sammyCHY/helm-web-app1.git'
+                git branch: 'main', url: 'https://github.com/sammyCHY/helm-web-app1.git'
             }
         }
 
         stage('Deploy with Helm') {
             steps {
-                script {
-                    sh '/usr/local/bin/helm upgrade --install my-webapp ./webapp --namespace default'
-                }
+                sh '''
+                    kubectl get nodes
+                    helm upgrade --install my-webapp ./webapp --namespace default
+                '''
             }
         }
     }
@@ -353,6 +363,11 @@ pipeline {
 The Image shows the Helm Pipeline Configured
 
 ![The Image shows the final Configuration of helm script](image/helm-pipeline-script-configured.png)
+
+
+Make sure the Jenkins url is integrated with the github-webhook.
+
+![The Image shows the integration of github webhook with the jenkins](image/github-webhook.png)
 
 
 ## Step 2: Update Helm Chart and Trigger Jenkins Pipeline.
@@ -445,3 +460,18 @@ Script Path                       Jenkinsfile
 ![The Image shows the Jenkins configuration](image/jenkins-configuration.png)
 
 final decision result
+
+Below is the Image of the final result, build successfully.
+
+![The Image below show the final build of jenkins integrating with helms](image/helm-jenkins-pipeline-build.png)
+
+
+![The Image below show the final build of jenkins integrating with helms](image/helm-jenkins-pipeline-build1.png)
+
+
+![The Image below show the final build of jenkins integrating with helms](image/helm-jenkins-pipeline-build2.png)
+
+![The Image below show the final build of jenkins integrating with helms](image/helm-jenkins-pipeline-build3.png)
+
+
+![The Image below show the final build of jenkins integrating with helms](image/helm-jenkins-pipeline-build-final.png)
